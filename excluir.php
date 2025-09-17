@@ -1,10 +1,20 @@
 <?php
-include 'conexao.php';
-$id = $_GET['id'];
+include 'init.php';
+if(!isset($_SESSION['usuario'])){ header("Location: login.php"); exit; }
 
-$sql = $pdo->prepare("DELETE FROM alunos WHERE id=?");
-$sql->execute([$id]);
+if($_SERVER['REQUEST_METHOD'] !== 'POST'){
+    header("Location: alunos.php");
+    exit;
+}
 
-header("Location: alunos.php");
-?>
-<link rel="stylesheet" href="css/estilo.css">
+if(!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')){
+    die('Requisição inválida.');
+}
+
+$id = intval($_POST['id'] ?? 0);
+if($id <= 0) { header("Location: alunos.php"); exit; }
+
+$stmt = $pdo->prepare("DELETE FROM alunos WHERE id = ?");
+$stmt->execute([$id]);
+header("Location: alunos.php?msg=" . urlencode("Aluno excluído."));
+exit;

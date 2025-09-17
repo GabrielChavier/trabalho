@@ -1,27 +1,35 @@
 <?php
-session_start();
-include 'conexao.php';
+include 'init.php';
 
-if(isset($_POST['entrar'])){
-    $email = $_POST['email'];
-    $senha = $_POST['senha'];
+$erro = '';
+if($_SERVER['REQUEST_METHOD'] === 'POST'){
+    $email = trim($_POST['email'] ?? '');
+    $senha = $_POST['senha'] ?? '';
 
-    $sql = $pdo->prepare("SELECT * FROM usuarios WHERE email = ?");
-    $sql->execute([$email]);
-    $usuario = $sql->fetch(PDO::FETCH_ASSOC);
-
-    if($usuario && password_verify($senha, $usuario['senha'])){
-        $_SESSION['usuario'] = $usuario['id'];
-        header("Location: alunos.php");
+    if(!$email || !$senha){
+        $erro = 'Preencha email e senha.';
     } else {
-        echo "Login invalido!";
+        $stmt = $pdo->prepare("SELECT id, nome, senha FROM usuarios WHERE email = ?");
+        $stmt->execute([$email]);
+        $usuario = $stmt->fetch();
+        if($usuario && password_verify($senha, $usuario['senha'])){
+            session_regenerate_id(true);
+            $_SESSION['usuario'] = $usuario['id'];
+            $_SESSION['usuario_nome'] = $usuario['nome'];
+            header("Location: alunos.php");
+            exit;
+        } else {
+            $erro = 'Login inválido.';
+        }
     }
 }
 ?>
-
-<form method="POST" >
-    Email: <input type="email" name="email" ><br>
-    Senha: <input type="password" name="senha" ><br>
-    <button type="submit" name="entrar">Entrar</button>
-</form>
-<link rel="stylesheet" href="css/estilo.css">
+<div class="container mt-4 w-50">
+    <h2>Login</h2>
+    <?php if($erro): ?><div class="alert alert-danger"><?= e($erro) ?></div><?php endif; ?>
+    <form method="POST">
+        <div class="mb-2"><label>Email</label><input class="form-control" type="email" name="email"></div>
+        <div class="mb-2"><label>Senha</label><input class="form-control" type="password" name="senha"></div>
+        <button class="btn btn-primary" type="submit">Entrar</button>
+    </form>
+</div>
